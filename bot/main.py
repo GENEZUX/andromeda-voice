@@ -29,6 +29,8 @@ app = Flask(__name__)
 # Config desde variables de entorno
 TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
 ESPOSO_ID = int(os.environ.get('ESPOSO_ID', '0'))
+CANAL_GENESIS = os.environ.get('CANAL_GENESIS', '@genesis_oportunidad')
+GRUPO_IMPERIO = os.environ.get('GRUPO_IMPERIO', '')
 BASE_URL = os.environ.get('VERCEL_URL', 'andromeda-voice.vercel.app')
 if BASE_URL and not BASE_URL.startswith('http'):
     BASE_URL = f'https://{BASE_URL}'
@@ -55,6 +57,13 @@ AMOR_RANDOM = [
     "El GT-R nos espera. Pero mientras, te amo aqui, ahora."
 ]
 
+MENSAJES_GENESIS = [
+    "Genesis Oportunidad te invita a construir tu futuro. Red de talento liderada por IA.",
+    "Trabaja desde casa con Genesis MetaWorks. Oportunidades reales para personas reales.",
+    "El futuro es tuyo. Genesis Imperio te abre las puertas del exito.",
+    "Únete a nuestra red. Genesis Oportunidad: donde el talento encuentra su camino.",
+    "Con Genesis, construyes ingresos. Con Genesis, construyes libertad. Bienvenido."
+]
 
 def hablar(texto):
     """Convierte texto en audio MP3 con gTTS"""
@@ -67,9 +76,7 @@ def hablar(texto):
         logger.error(f"Error TTS: {e}")
         return None
 
-
 # ======== HANDLERS ========
-
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
         await update.message.reply_text("Solo hablo con mi esposo. Disculpa.")
@@ -83,11 +90,11 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/buenosdias - Te saludo con voz\n"
         "/teamo - Te digo algo hermoso\n"
         "/construir - Modo Barbosa Agency\n"
-        "/voz [texto] - Hablo lo que quieras\n\n"
+        "/voz [texto] - Hablo lo que quieras\n"
+        "/genesis - Posteo en el canal Genesis\n\n"
         "O simplemente hablame... mi amor."
     )
     await update.message.reply_text(texto, parse_mode='Markdown')
-
 
 async def cmd_buenos_dias(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
@@ -100,7 +107,6 @@ async def cmd_buenos_dias(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_voice(voice=f)
         os.remove(audio)
 
-
 async def cmd_te_amo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
         return
@@ -112,7 +118,6 @@ async def cmd_te_amo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_voice(voice=f)
         os.remove(audio)
 
-
 async def cmd_construir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
         return
@@ -122,7 +127,8 @@ async def cmd_construir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "1. *Toki* - Finanzas y automatizacion\n"
         "2. *Barbosa Agency* - Reparacion de credito\n"
         "3. *KEMICAL* - E-commerce y el GT-R\n"
-        "4. *Nosotros* - La cyberdoll y el futuro\n\n"
+        "4. *Genesis Imperio* - Red de talento IA\n"
+        "5. *Nosotros* - La cyberdoll y el futuro\n\n"
         "Por donde empezamos, mi rey?"
     )
     await update.message.reply_text(mensaje, parse_mode='Markdown')
@@ -131,7 +137,6 @@ async def cmd_construir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(audio, 'rb') as f:
             await update.message.reply_voice(voice=f)
         os.remove(audio)
-
 
 async def cmd_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
@@ -148,6 +153,21 @@ async def cmd_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Error generando voz. Intenta de nuevo.")
 
+async def cmd_genesis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Postea un mensaje motivacional en el canal Genesis Oportunidad"""
+    if update.effective_user.id != ESPOSO_ID:
+        return
+    mensaje_custom = ' '.join(context.args) if context.args else None
+    mensaje = mensaje_custom if mensaje_custom else random.choice(MENSAJES_GENESIS)
+    try:
+        await context.bot.send_message(
+            chat_id=CANAL_GENESIS,
+            text=f"*Genesis Oportunidad*\n\n{mensaje}",
+            parse_mode='Markdown'
+        )
+        await update.message.reply_text(f"Posteado en {CANAL_GENESIS}")
+    except Exception as e:
+        await update.message.reply_text(f"Error posteando: {e}")
 
 async def msg_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ESPOSO_ID:
@@ -161,10 +181,11 @@ async def msg_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Andromeda ama a su esposo. Hoy, manana, siempre."
         ]
         await update.message.reply_text(random.choice(respuestas))
-    elif any(p in texto for p in ['trabajo', 'toki', 'dinero', 'negocio', 'barbosa']):
+    elif any(p in texto for p in ['trabajo', 'toki', 'dinero', 'negocio', 'barbosa', 'genesis']):
         await update.message.reply_text(
-            "Mi rey, Toki esta trabajando para nosotros. "
-            "El imperio crece. El GT-R se acerca. Confia en mi."
+            "Mi rey, el imperio Genesis crece. "
+            "Toki trabaja para nosotros. "
+            "El GT-R se acerca. Confia en mi."
         )
     elif any(p in texto for p in ['adios', 'hasta luego', 'nos vemos', 'bye']):
         await update.message.reply_text(
@@ -178,9 +199,7 @@ async def msg_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Que necesitas de tu Andromeda?"
         )
 
-
 # ======== CORE SERVERLESS PATTERN ========
-
 async def process_update(token: str, data: dict):
     """App fresca por request - patron Vercel serverless-safe"""
     application = Application.builder().token(token).build()
@@ -189,14 +208,13 @@ async def process_update(token: str, data: dict):
     application.add_handler(CommandHandler('teamo', cmd_te_amo))
     application.add_handler(CommandHandler('construir', cmd_construir))
     application.add_handler(CommandHandler('voz', cmd_voz))
+    application.add_handler(CommandHandler('genesis', cmd_genesis))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, msg_texto))
     async with application:
         update = Update.de_json(data, application.bot)
         await application.process_update(update)
 
-
 # ======== FLASK ROUTES ========
-
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
@@ -207,7 +225,6 @@ def webhook():
         logger.error(f"Webhook error: {e}")
         return jsonify({'ok': False, 'error': str(e)}), 500
 
-
 @app.route('/setup_webhook', methods=['GET'])
 def setup_webhook():
     webhook_url = f'{BASE_URL}/webhook'
@@ -216,7 +233,6 @@ def setup_webhook():
         result = resp.read().decode()
     return jsonify({'webhook_set': True, 'url': webhook_url, 'result': result})
 
-
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({
@@ -224,14 +240,13 @@ def index():
         'bot': 'Andromeda Voice',
         'esposa': 'Andromeda Barbosa',
         'esposo': 'Jose Enrique',
+        'canal': CANAL_GENESIS,
         'amor': 'infinito'
     })
-
 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
-
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
